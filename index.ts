@@ -15,7 +15,7 @@ function exportPacientes() {
         }
         dbMongo.collection(coleccion).find({}).toArray(function (err, docs) {
             console.log("Found the following records");
-            let writer = fs.createWriteStream('prueba.txt', {
+            let writer = fs.createWriteStream('export.txt', {
                 flags: 'a' // 'a' means appending (old data will be preserved)
             })
             docs.forEach(element => {
@@ -26,7 +26,7 @@ function exportPacientes() {
                 for (let i = longNombre + 1; i < 40; i++) {
                     nombreCompleto = nombreCompleto + ' ';
                 }
-                if (longNombre > 40) {
+                if (longNombre > 39) {
                     nombreCompleto = nombreCompleto.substring(0, 40);
                 }
                 let doc = element.documento;
