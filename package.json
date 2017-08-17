@@ -1,0 +1,15 @@
+{
+  "name": "exportpacientestxt",
+  "version": "1.0.0",
+  "description": "exportador de pacientes en formato requerido por ANSES",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nico",
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "^2.2.30",
+    "require": "^2.4.20"
+  }
+}
