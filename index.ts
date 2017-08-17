@@ -4,7 +4,6 @@ const MongoClient = require('mongodb').MongoClient;
 
 const url = configPrivate.mongoDB.host;
 const coleccion = configPrivate.mongoDB.collection;
-
 exportPacientes();
 
 function exportPacientes() {
@@ -21,7 +20,7 @@ function exportPacientes() {
             })
             docs.forEach(element => {
                 let sexo = (element.sexo == 'femenino') ? 'F' : 'M';
-                // Formateamos nombre de acuerdo a especificaciones Anses
+                // Formateamos nombre de acuerdo a especificaciones
                 let longNombre = element.apellido.length + element.nombre.length;
                 let nombreCompleto = element.apellido + ' ' + element.nombre;
                 for (let i = longNombre + 1; i < 40; i++) {
