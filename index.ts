@@ -26,7 +26,9 @@ function exportPacientes() {
                 for (let i = longNombre + 1; i < 40; i++) {
                     nombreCompleto = nombreCompleto + ' ';
                 }
-
+                if (longNombre > 40) {
+                    nombreCompleto = nombreCompleto.substring(0, 40);
+                }
                 let doc = element.documento;
                 // formateamos la fecha "aaammdd"
                 let mes = (((element.fechaNacimiento.getMonth() + 1).toString()).length === 1) ? ('0' + (element.fechaNacimiento.getMonth() + 1).toString()) : (element.fechaNacimiento.getMonth() + 1).toString();
