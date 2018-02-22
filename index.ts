@@ -2,36 +2,77 @@ import * as configPrivate from './config.private';
 const fs = require('fs');
 const MongoClient = require('mongodb').MongoClient;
 
+const chalk = require('chalk');
+const clear = require('clear');
+const figlet = require('figlet');
+var inquirer = require('inquirer');
+
 const url = configPrivate.mongoDB.host;
 const coleccion = configPrivate.mongoDB.collection;
 
 inicio();
 
+
+
 function inicio() {
-    console.log("Ingrese una opción:");
-    console.log("1- Importar pacientes cuilificados");
-    console.log("2- Exportar pacientes cuilificados");
-    console.log("3- Nada");
+    clear();
+    console.log(
+        chalk.red.bold(
+            figlet.textSync('Cuilificador', { horizontalLayout: 'full' })
+        )
+    );
 
-    process.argv.forEach((val, index) => {
-        console.log(`${index}: ${val}`);
-      });
+    const questions = [
+        {
+            name: 'cuilificar',
+            type: 'rawlist',
+            message: 'Seleccione una opción: ',
+            choices: [
+                {
+                    key: "1",
+                    name: "Importar Pacientes cuilificados",
+                    value: "importar"
+                },
+                {
+                    key: "2",
+                    name: "Exportar Pacientes para cuilificar",
+                    value: "exportar"
+                },
+                {
+                    key: "3",
+                    name: "Ninguna",
+                    value: "ninguna"
+                }
+            ],
+            validate: function (value) {
+                if (value.length) {
+                    return true;
+                } else {
+                    return 'Debe seleccionar una opción';
+                }
+            }
+        }
+    ];
 
-    
-
-    // let args = process.argv[2];
-    // console.log("Args: ", args);
-    // importarPacientesCuilificados();
-    // exportPacientes();
+    inquirer.prompt(questions).then(answers => {
+        if (answers.cuilificar === 'importar') {
+            importarPacientesCuilificados();
+        } else if (answers.cuilificar === 'exportar') {
+            exportPacientes();
+        } else {
+            console.log("No se seleccionó ninguna opción");
+        }
+    });
 }
 
+// TODO: Ver de levantar el archivo enviado por ANSES automáticamente
 function importarPacientesCuilificados() {
-    let args = process.argv.slice(2);
-    console.log("Entrando a pacientes cuilificados: ", args[0]);
+    console.log("Entrando a pacientes cuilificados: ");
 
     let archivo;
 
-    let nombreArchivo = './pacientes_cuilificados.txt';
+    // Poner el nombre de archivo que se envió desde ANSES
+    let nombreArchivo = './export_sips.txt';
 
     fs.exists(nombreArchivo, function (exists) {
         if (exists) { // results true
@@ -40,9 +81,7 @@ function importarPacientesCuilificados() {
                     console.log(err)
                 }
                 let pacientesCuilificados: any[] = data;
-                //procesarDatos(pacientesCuilificados);
-
-                // console.log(data);
+                procesarDatos(pacientesCuilificados);                
             })
         }
     });
