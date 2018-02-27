@@ -72,7 +72,7 @@ function importarPacientesCuilificados() {
     let archivo;
 
     // Poner el nombre de archivo que se envió desde ANSES
-    let nombreArchivo = './export_sips.txt';
+    let nombreArchivo = './pacientes_cuilificados.txt';
 
     fs.exists(nombreArchivo, function (exists) {
         if (exists) { // results true
