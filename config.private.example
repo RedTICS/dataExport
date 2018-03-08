@@ -1,8 +1,0 @@
-let configPrivate = {
-    mongoDB: {
-        host: '-----',
-        collection: '------'
-    }
-}
-
-export = configPrivate;
