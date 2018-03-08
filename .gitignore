@@ -20,3 +20,4 @@ typings/*
 
 # Resultados
 export.txt
+export/PacientesCuilificados/*.*
