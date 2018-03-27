@@ -20,5 +20,5 @@ typings/*
 
 # Resultados
 *.txt
-export/PacientesCuilificados/*.*
-export
+
+
