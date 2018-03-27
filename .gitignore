@@ -19,6 +19,6 @@ typings/*
 .vscode
 
 # Resultados
-export.txt
+*.txt
 export/PacientesCuilificados/*.*
 export
