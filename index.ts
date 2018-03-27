@@ -243,7 +243,30 @@ function exportPacientes() {
     })
 }
 
+async function procesarDatosAnses(data) {
 
+    data.forEach(element => {
+        let writer = fs.createWriteStream('pacientes_anses.txt', {
+            flags: 'a' // 'a' means appending (old data will be preserved)
+        })
+
+        console.log("Data: ", element)
+        let cuil = element.cuil;
+        let sumar = element.sumar;
+        let cuie = element.cuie;
+        let establecimiento = element.establecimiento;
+        let discapacitado = element.discapacitado;
+        let fechaControlSalud = element.fecha;
+        let esquema = element.esquema;
+        let codigoEstablecimiento = element.codigoEstablecimiento;
+        let nombreEstablecimiento = element.nombreEstablecimiento;
+        let fechaAplicacion = element.fechaAplicacion;
+        let dependencia = element.dependencia;
+
+        writer.write(cuil + sumar + cuie + establecimiento + discapacitado + fechaControlSalud + esquema + codigoEstablecimiento + nombreEstablecimiento + fechaAplicacion + dependencia);
+        writer.write('\n');
+    });
+}
 /* Exportar pacientes a ANSES*/
 async function exportarPacientesAnses() {
     const query_limit = 1000000;
@@ -259,15 +282,13 @@ async function exportarPacientesAnses() {
 
     let pool = await new sql.ConnectionPool(connection).connect();
 
+    let listaPacienteAnses: any = [];
+
     MongoClient.connect(url, async function (err: any, dbMongo: any) {
         if (err) {
             console.log('Error conectando a mongoClient', err);
             dbMongo.close();
         }
-
-        let writer = fs.createWriteStream('pacientes_anses.txt', {
-            flags: 'a' // 'a' means appending (old data will be preserved)
-        })
 
         let cursor = dbMongo.collection(coleccion).aggregate([
             {
@@ -288,8 +309,6 @@ async function exportarPacientesAnses() {
         let x = 0;
         let total = 0;
 
-        let listaPacienteAnses: any = [];
-
         await cursorArray.then(async pacientesCuil => {
 
 
@@ -298,14 +317,13 @@ async function exportarPacientesAnses() {
 
                 let edad = await getEdadPaciente(pacientesCuil[i].fechaNacimiento);
 
-                if (edad > 0) {
+                if (edad <= 18) {
                     let vacunas: any = await getNomivac(pacientesCuil[i].documento, pool);
                     vacunas = vacunas.recordset;
 
                     let prestacion: any = await getPrestacion(pacientesCuil[i].documento, pool);
                     prestacion = prestacion.recordset;
-console.log("Prestaciónnn: ", prestacion[1])
-console.log("********************************")
+
                     if (prestacion.length > 0) {
                         pacienteAnses['cuil'] = pacientesCuil[i].cuil;
                         pacienteAnses['cuie'] = prestacion[0].Cuie;
@@ -316,7 +334,7 @@ console.log("********************************")
                         pacienteAnses['codigoEstablecimiento'] = vacunas[0].CodEstablecimiento;
                         pacienteAnses['nombreEstablecimiento'] = vacunas[0].NombreEstablecimiento;
                         pacienteAnses['fechaAplicacion'] = vacunas[0].FechaAplicacion;
-                        pacienteAnses['dependencia'] = '';
+                        pacienteAnses['dependencia'] = '        ';
 
                         let pacienteSumar: any = await getDatosSumar(pacientesCuil[i].documento, pool);
                         pacienteSumar = pacienteSumar.recordset;
@@ -331,8 +349,8 @@ console.log("********************************")
                             pacienteAnses['sumar'] = 'NO';
                             x++;
                         }
-                        
-                        listaPacienteAnses.push(pacienteAnses);                        
+
+                        listaPacienteAnses.push(pacienteAnses);
                     } else {
 
                     }
@@ -344,6 +362,7 @@ console.log("********************************")
             console.log("Encontrado: ", listaPacienteAnses)
             //console.log("Total: ", total)
         });
+        await procesarDatosAnses(listaPacienteAnses);
     });
 }
 
