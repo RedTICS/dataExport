@@ -19,6 +19,7 @@
     "inquirer": "^5.1.0",
     "lodash": "^4.17.5",
     "minimist": "^1.2.0",
+    "moment": "^2.21.0",
     "mongodb": "^2.2.30",
     "mssql": "^4.1.0",
     "promise": "^8.0.1",

@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { PacienteMpi } from './paciente.service';
 import { PacienteSumar } from './paciente-sumar.service';
 import * as sql from 'mssql';
+import * as moment from 'moment';
 
 var async = require('async');
 const fs = require('fs');
@@ -242,8 +243,21 @@ function exportPacientes() {
     })
 }
 
-function exportarPacientesAnses() {
+
+/* Exportar pacientes a ANSES*/
+async function exportarPacientesAnses() {
     const query_limit = 1000000;
+
+    var connection = {
+        user: configPrivate.authSql.user,
+        password: configPrivate.authSql.password,
+        server: configPrivate.serverSql.server,
+        database: configPrivate.serverSql.database,
+        requestTimeout: 1900000,
+        stream: true
+    };
+
+    let pool = await new sql.ConnectionPool(connection).connect();
 
     MongoClient.connect(url, async function (err: any, dbMongo: any) {
         if (err) {
@@ -255,19 +269,11 @@ function exportarPacientesAnses() {
             flags: 'a' // 'a' means appending (old data will be preserved)
         })
 
-        var connection = {
-            user: configPrivate.authSql.user,
-            password: configPrivate.authSql.password,
-            server: configPrivate.serverSql.server,
-            database: configPrivate.serverSql.database,
-            requestTimeout: 190000,
-            stream: true
-        };
-
-
-
         let cursor = dbMongo.collection(coleccion).aggregate([
-            { $project: { documento: 1, nombre: 1, apellido: 1 } },
+            {
+                $match: { cuil: { $ne: '', $exists: true } }
+            },
+            { $project: { cuil: 1, documento: 1, fechaNacimiento: 1, nombre: 1, apellido: 1 } },
             {
                 $limit: query_limit
             }
@@ -279,47 +285,95 @@ function exportarPacientesAnses() {
             });
 
         let cursorArray = cursor.toArray();
+        let x = 0;
+        let total = 0;
 
-        await cursorArray.then(agendas => {
-            async.every(agendas, async (a, indexA) => {
-                let pool = await sql.connect(connection)
-                let dni = a.documento;
-                let paciente = await getDatosSumar(dni, pool);
-                if (paciente !== undefined) {
-                    console.log("Pac Encontrado: ", paciente)
+        let listaPacienteAnses: any = [];
+
+        await cursorArray.then(async pacientesCuil => {
+
+
+            for (let i = 0; i < pacientesCuil.length; i++) {
+                let pacienteAnses: any = {};
+
+                let edad = await getEdadPaciente(pacientesCuil[i].fechaNacimiento);
+
+                if (edad > 0) {
+                    let vacunas: any = await getNomivac(pacientesCuil[i].documento, pool);
+                    vacunas = vacunas.recordset;
+
+                    let prestacion: any = await getPrestacion(pacientesCuil[i].documento, pool);
+                    prestacion = prestacion.recordset;
+console.log("Prestaciónnn: ", prestacion[1])
+console.log("********************************")
+                    if (prestacion.length > 0) {
+                        pacienteAnses['cuil'] = pacientesCuil[i].cuil;
+                        pacienteAnses['cuie'] = prestacion[0].Cuie;
+                        pacienteAnses['establecimiento'] = prestacion[0].Efector;
+                        pacienteAnses['fechaControl'] = prestacion[0].Fecha;
+                        pacienteAnses['discapacitado'] = '';
+                        pacienteAnses['esquema'] = 'EN';
+                        pacienteAnses['codigoEstablecimiento'] = vacunas[0].CodEstablecimiento;
+                        pacienteAnses['nombreEstablecimiento'] = vacunas[0].NombreEstablecimiento;
+                        pacienteAnses['fechaAplicacion'] = vacunas[0].FechaAplicacion;
+                        pacienteAnses['dependencia'] = '';
+
+                        let pacienteSumar: any = await getDatosSumar(pacientesCuil[i].documento, pool);
+                        pacienteSumar = pacienteSumar.recordset;
+
+                        total++;
+
+                        if (pacienteSumar.length > 0) {
+                            pacienteAnses['sumar'] = 'SI';
+
+                            x++;
+                        } else {
+                            pacienteAnses['sumar'] = 'NO';
+                            x++;
+                        }
+                        
+                        listaPacienteAnses.push(pacienteAnses);                        
+                    } else {
+
+                    }
+                    //console.log("------------------");
+                    //  console.log("Datos del Menor: ", pacienteAnses)
                 }
-                pool.close();
-            });
+            }
+            pool.close();
+            console.log("Encontrado: ", listaPacienteAnses)
+            //console.log("Total: ", total)
         });
     });
 }
 
-function getDatosSumar(dni, pool) {
-    return new Promise(async (resolve: any, reject: any) => {
-        let result1 = await new sql.Request(pool)
-            .input('dni', sql.VarChar(50), dni)
-            .input('activo', sql.Char, 'S')
-            .query('SELECT * FROM dbo.PN_smiafiliados WHERE afidni = @dni and activo = @activo');
-
-
-        // console.log("Resultt: ", result1.recordset[0])
-        resolve(result1)
-    });
-    //return ([result1]); // devuelvo un arreglo de promesas para que se ejecuten en paralelo y las capturo con un promise.all
+async function getDatosSumar(dni, pool) {
+    return await pool.request()
+        .input('dni', sql.VarChar(50), dni)
+        .input('activo', sql.Char, 'S')
+        .input('aficlasedoc', sql.Char, 'P')
+        .query('SELECT * FROM dbo.PN_smiafiliados WHERE afidni = @dni and activo = @activo AND aficlasedoc = @aficlasedoc');
 }
-// async function executeQuery(query: any, pool) {
 
-//     try {
-//         console.log("Execute: ", query)
-//         // query += ' select SCOPE_IDENTITY() as id';
-//         let result = await new sql.Request(pool).query(query);
-//         console.log("Resultado: ", result)
-//         if (result && result.recordset) {
-//             return result.recordset[0].id;
-//         }
-//     } catch (err) {
-//         console.log("Errorrrr: ", err)
-//         return (err);
-//     }
-// }
+async function getPrestacion(dni, pool) {
+    return await pool.request()
+        .input('dni', sql.VarChar(50), dni)
+        .query('SELECT e.nombre as Efector, c.fecha as Fecha, p.fechaNacimiento as FechaNacimiento, e.cuie as Cuie FROM dbo.CON_ConsultaDiagnostico cd '
+            + 'INNER JOIN dbo.CON_Consulta c ON c.idConsulta = cd.idConsulta '
+            + 'INNER JOIN dbo.Sys_Efector e ON e.idEfector = c.idEfector '
+            + 'INNER JOIN dbo.Sys_Paciente p ON p.idPaciente = c.idPaciente '
+            + 'WHERE p.numeroDocumento = @dni and cd.CODCIE10 IN (9448, 9449, 9450, 9451)');
+}
+
+async function getNomivac(dni, pool) {
+    return await pool.request()
+        .input('dni', sql.VarChar(50), dni)
+        .query('SELECT [Código de establecimiento] as CodEstablecimiento,Establecimiento as NombreEstablecimiento, [Fecha de aplicación] as FechaAplicacion FROM dbo.NomivacExcel where [Nro# de documento] = @dni')
+}
+
+function getEdadPaciente(fechaNacimiento: string): number {
+    let edad = moment().diff(fechaNacimiento, 'years');
+
+    return edad;
+}
 
