@@ -242,31 +242,114 @@ function exportPacientes() {
         });
     })
 }
-
+// String.prototype.insertAt=function(index, string) { 
+//     return this.substr(0, index) + string + this.substr(index);
+//   }
 async function procesarDatosAnses(data) {
 
-    data.forEach(element => {
+    data = data.map(x => {
         let writer = fs.createWriteStream('pacientes_anses.txt', {
             flags: 'a' // 'a' means appending (old data will be preserved)
         })
 
-        console.log("Data: ", element)
-        let cuil = element.cuil;
-        let sumar = element.sumar;
-        let cuie = element.cuie;
-        let establecimiento = element.establecimiento;
-        let discapacitado = element.discapacitado;
-        let fechaControlSalud = element.fecha;
-        let esquema = element.esquema;
-        let codigoEstablecimiento = element.codigoEstablecimiento;
-        let nombreEstablecimiento = element.nombreEstablecimiento;
-        let fechaAplicacion = element.fechaAplicacion;
-        let dependencia = element.dependencia;
+        let cuil = x.cuil;
+        let sumar = x.sumar;
+        let sisa = ' '.repeat(15);
+        let cuie = x.cuie + ' '.repeat(9 - x.cuie.length);
+        let establecimiento = (x.establecimiento.length <= 35) ? x.establecimiento + ' '.repeat(35 - x.establecimiento.length) : x.establecimiento.substring(0, 35);
+        let discapacitado = x.discapacitado;
+        let fechaControl = moment(x.fechaControl).format("YYYYMMDD");
+        let esquema = x.esquema;
+        let codigoEstablecimiento = x.codigoEstablecimiento.substring(0, 9);
+        let nombreEstablecimiento = (x.nombreEstablecimiento.length <= 35) ? x.nombreEstablecimiento + ' '.repeat(35 - x.nombreEstablecimiento.length) : x.nombreEstablecimiento.substring(0, 35);
+        let fechaAplicacion = moment(x.fechaAplicacion).format("YYYYMMDD");
+        let dependencia = x.dependencia;
 
-        writer.write(cuil + sumar + cuie + establecimiento + discapacitado + fechaControlSalud + esquema + codigoEstablecimiento + nombreEstablecimiento + fechaAplicacion + dependencia);
+        writer.write(cuil + sumar + sisa + cuie + establecimiento + discapacitado + fechaControl + esquema + codigoEstablecimiento + nombreEstablecimiento + fechaAplicacion + dependencia);
         writer.write('\n');
     });
+
+    // data.forEach(element => {
+    //     // let writer = fs.createWriteStream('pacientes_anses.txt', {
+    //     //     flags: 'a' // 'a' means appending (old data will be preserved)
+    //     // })
+
+    //     console.log("Data: ", element)
+    //     let cuil = element.cuil;
+    //     let sumar = element.sumar;
+    //     let sisa;
+
+
+    //     sisa = sisa.substring(0, 15) + ' ' + sisa.substring(15);
+    //     let cuie = element.cuie;
+
+    //     // var str = str + new Array(x + 1).join(' ')
+
+    //     //establecimiento
+    //     let establecimiento = element.establecimiento;
+    //     let longEstablecimiento = element.establecimiento.length;
+    //     for (let i = longEstablecimiento + 1; i < 36; i++) {
+    //         establecimiento = establecimiento + ' ';
+    //     }
+    //     if (longEstablecimiento > 35) {
+    //         establecimiento = establecimiento.substring(0, 35);
+    //     }
+    //     let discapacitado = element.discapacitado;
+    //     //formateo de fecha
+    //     let mes = (((element.fechaControl.getMonth() + 1).toString()).length === 1) ? ('0' + (element.fechaControl.getMonth() + 1).toString()) : (element.fechaControl.getMonth() + 1).toString();
+    //     let dia = ((element.fechaControl.getDate().toString()).length === 1) ? ('0' + (element.fechaControl.getDate().toString())) : element.fechaControl.getDate().toString();
+    //     let fechaControlSalud = element.fechaControl.getFullYear().toString() + mes + dia;
+
+    //     let esquema = element.esquema;
+
+    //     let codigoEstablecimiento = element.codigoEstablecimiento;
+
+    //     let nombreEstablecimiento = element.nombreEstablecimiento;
+    //     let longNombreEstablecimiento = element.nombreEstablecimiento.length;
+    //     for (let i = longNombreEstablecimiento + 1; i < 36; i++) {
+    //         nombreEstablecimiento = nombreEstablecimiento + ' ';
+    //     }
+    //     if (longNombreEstablecimiento > 35) {
+    //         nombreEstablecimiento = nombreEstablecimiento.substring(0, 35);
+    //     }
+
+    //     //formateo de fecha
+    //     let mesAplicacion = (((element.fechaAplicacion.getMonth() + 1).toString()).length === 1) ? ('0' + (element.fechaAplicacion.getMonth() + 1).toString()) : (element.fechaAplicacion.getMonth() + 1).toString();
+    //     let diaAplicacion = ((element.fechaAplicacion.getDate().toString()).length === 1) ? ('0' + (element.fechaAplicacion.getDate().toString())) : element.fechaAplicacion.getDate().toString();
+    //     let fechaAplicacion = element.fechaAplicacion.getFullYear().toString() + mes + dia;
+    //     let dependencia = element.dependencia;
+
+    //     // writer.write(cuil + sumar + sisa + cuie + establecimiento + discapacitado + fechaControlSalud + esquema + codigoEstablecimiento + nombreEstablecimiento + fechaAplicacion + dependencia);       
+    //     // writer.write('\n');
+    // });
 }
+
+
+
+// async function procesarDatosAnses(data) {
+
+//     data.forEach(element => {
+//         let writer = fs.createWriteStream('pacientes_anses.txt', {
+//             flags: 'a' // 'a' means appending (old data will be preserved)
+//         })
+
+//         console.log("Data: ", element)
+//         let cuil = element.cuil;
+//         let sumar = element.sumar;
+//         let cuie = element.cuie;
+//         let establecimiento = element.establecimiento;
+//         let discapacitado = element.discapacitado;
+//         let fechaControlSalud = element.fecha;
+//         let esquema = element.esquema;
+//         let codigoEstablecimiento = element.codigoEstablecimiento;
+//         let nombreEstablecimiento = element.nombreEstablecimiento;
+//         let fechaAplicacion = element.fechaAplicacion;
+//         let dependencia = element.dependencia;
+
+//         writer.write(cuil + sumar + cuie + establecimiento + discapacitado + fechaControlSalud + esquema + codigoEstablecimiento + nombreEstablecimiento + fechaAplicacion + dependencia);
+//         writer.write('\n');
+//     });
+// }
 /* Exportar pacientes a ANSES*/
 async function exportarPacientesAnses() {
     const query_limit = 1000000;
@@ -329,7 +412,7 @@ async function exportarPacientesAnses() {
                         pacienteAnses['cuie'] = prestacion[0].Cuie;
                         pacienteAnses['establecimiento'] = prestacion[0].Efector;
                         pacienteAnses['fechaControl'] = prestacion[0].Fecha;
-                        pacienteAnses['discapacitado'] = '';
+                        pacienteAnses['discapacitado'] = '  ';
                         pacienteAnses['esquema'] = 'EN';
                         pacienteAnses['codigoEstablecimiento'] = vacunas[0].CodEstablecimiento;
                         pacienteAnses['nombreEstablecimiento'] = vacunas[0].NombreEstablecimiento;
