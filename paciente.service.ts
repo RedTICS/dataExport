@@ -2,8 +2,8 @@ import * as http from 'http';
 import * as configPrivate from './config.private';
 
 export class PacienteMpi {
-    
-   cuilificaPaciente(patient: any, token: any) {
+
+    cuilificaPaciente(patient: any, token: any) {
         return new Promise((resolve: any, reject: any) => {
             let id = patient._id;
             // delete paciente._id; //Borro el id para que no se duplique
@@ -17,19 +17,20 @@ export class PacienteMpi {
                     'Content-Type': 'application/json',
                 }
             };
-            let req = http.request(options, function(res) {
-                res.on('data', function(result) {
-                    console.log('paciente actualizado: ', patient.apellido, patient.nombre, patient.documento);
+            let req = http.request(options, function (res) {
+                res.on('data', function (result) {
+                    // console.log('paciente actualizado: ', patient.apellido, patient.nombre, patient.documento);
+console.log("Pepepe: ", req)
                     resolve(result);
                 });
             });
-            req.on('error', function(e) {
+            req.on('error', function (e) {
                 console.log('Problemas API en update : ' + e.message + ' ----- ', e);
                 reject(e.message);
             });
             /*write data to request body*/
-            
-            req.write(JSON.stringify({op:'updateCuil', cuil: patient.cuil}));
+
+            req.write(JSON.stringify({ op: 'updateCuil', cuil: patient.cuil }));
             req.end();
         });
 

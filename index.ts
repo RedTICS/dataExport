@@ -181,7 +181,7 @@ async function procesarDatos(data) {
                 }
 
                 db.collection(coleccion).findOne(query, async function (err, pac) {
-                    console.log("Procesando: ", pac)
+                    // console.log("Procesando: ", pac)
                     if (err) {
                         console.log('err: ', err);
                         reject(err);
@@ -286,8 +286,6 @@ async function exportarPacientesAnses() {
         let total = 0;
 
         await cursorArray.then(async pacientesCuil => {
-
-
             for (let i = 0; i < pacientesCuil.length; i++) {
                 let pacienteAnses: any = {};
 
@@ -330,13 +328,10 @@ async function exportarPacientesAnses() {
                     } else {
 
                     }
-                    //console.log("------------------");
-                    //  console.log("Datos del Menor: ", pacienteAnses)
                 }
             }
             pool.close();
             console.log("Encontrado: ", listaPacienteAnses)
-            //console.log("Total: ", total)
         });
         await procesarDatosAnses(listaPacienteAnses);
     });
