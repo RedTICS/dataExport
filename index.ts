@@ -145,12 +145,112 @@ async function importarPacientesCuilificados(arch: any) {
                         reject(err)
                     }
                     let pacientesCuilificados: any[] = data;
-                    procesarDatos(pacientesCuilificados)
+                    // procesarDatos(pacientesCuilificados)
+
+                    guardaSipsCuilificado(pacientesCuilificados);
                     resolve(true);
                 })
             }
         });
     })
+}
+
+async function guardaSipsCuilificado(data) {
+
+    let remaining = '';
+    remaining += data;
+    let index = remaining.indexOf('\n');
+    let x = 0;
+    let pacCuil: any = [];
+    let pepe: any;
+
+    while (index > -1) {
+        let linea = remaining.substring(0, index);
+        console.log(linea);
+        x++;
+        console.log("Total: ", x)
+        // for (let i = 0; i < data.length; i++) {
+        let nombreCompleto = linea.substring(10, 49);
+        let dni = linea.substring(2, 10);
+        let sexo = linea.substring(50, 51);
+        let cuil = linea.substring(149, 160);
+        let fechaNacimiento = linea.substring(52, 60);
+
+        pepe = {
+            nombreCompleto: nombreCompleto,
+            documento: dni,
+            sexo: sexo,
+            cuil: cuil,
+            fechaNacimiento: fechaNacimiento
+        }
+
+        // pacCuil.push(pepe)
+        pacCuil.push(pepe);
+
+        remaining = remaining.substring(index + 1);
+        index = remaining.indexOf('\n');
+    }
+    // var entries = [];
+
+    var total_entries = pacCuil.length;
+
+    MongoClient.connect(url, function (err, db) {
+        // Get the collection
+        var col = db.collection('cuilSips2');
+        //
+
+        var bulk = col.initializeOrderedBulkOp();
+        var counter = 0;
+
+        for (let i = 0; i < pacCuil.length; i++) {
+            bulk.insert(pacCuil[i]);
+
+
+        }
+
+        bulk.execute(function (err, result) {
+            console.dir(err);
+            console.dir(result);
+            db.close();
+        });
+
+
+        // async.whilst(
+        //     // Iterator condition
+        //     function () { return counter <= total_entries },
+
+        //     // Do this in the iterator
+        //     function (callback) {
+        //         counter++;
+
+        //         bulk.insert(pacCuil[counter]);
+
+        //         // console.log("Insertado: ", pacCuil[counter]);
+
+        //         // if (counter % 1000 == 0) {
+        //             bulk.execute(function (err, result) {
+        //                 console.log("Entrando a cero");
+        //                 bulk = col.initializeOrderedBulkOp();
+        //                 callback(err);
+        //             });
+        //         // // } else {
+        //         //     callback();
+        //         // }
+        //     },
+
+        //     // When all is done
+        //     function (err) {
+        //         // if (counter % 1000 != 0)
+        //             bulk.execute(function (err, result) {
+        //                 console.log("inserted some more");
+        //             });
+        //         console.log("I'm finished now");
+        //         db.close();
+        //     }
+        // );
+    });
+
+    console.log("Cat pepe: ", pacCuil.length);
 }
 
 async function procesarDatos(data) {
@@ -244,6 +344,7 @@ function exportPacientes() {
 }
 
 /* Exportar pacientes a ANSES*/
+/* TODO: Tarda demasiado, probar de hacer un SP en SQL Server*/
 async function exportarPacientesAnses() {
     const query_limit = 1000000;
 
@@ -265,12 +366,12 @@ async function exportarPacientesAnses() {
             console.log('Error conectando a mongoClient', err);
             dbMongo.close();
         }
-
-        let cursor = dbMongo.collection(coleccion).aggregate([
+        console.log("Exportando a ANSES...")
+        let cursor = dbMongo.collection('cuilSips2').aggregate([
             {
                 $match: { cuil: { $ne: '', $exists: true } }
             },
-            { $project: { cuil: 1, documento: 1, fechaNacimiento: 1, nombre: 1, apellido: 1 } },
+            { $project: { cuil: 1, documento: 1, fechaNacimiento: 1, nombreCompleto: 1 } },
             {
                 $limit: query_limit
             }
@@ -284,12 +385,13 @@ async function exportarPacientesAnses() {
         let cursorArray = cursor.toArray();
         let x = 0;
         let total = 0;
-
+        
         await cursorArray.then(async pacientesCuil => {
+            console.log("Paccc: ", pacientesCuil.length)
             for (let i = 0; i < pacientesCuil.length; i++) {
                 let pacienteAnses: any = {};
 
-                let edad = await getEdadPaciente(pacientesCuil[i].fechaNacimiento);
+                let edad = 15;//await getEdadPaciente(pacientesCuil[i].fechaNacimiento);
 
                 if (edad <= 18) {
                     let vacunas: any = await getNomivac(pacientesCuil[i].documento, pool);
@@ -305,9 +407,9 @@ async function exportarPacientesAnses() {
                         pacienteAnses['fechaControl'] = prestacion[0].Fecha;
                         pacienteAnses['discapacitado'] = '  ';
                         pacienteAnses['esquema'] = 'EN';
-                        pacienteAnses['codigoEstablecimiento'] = vacunas[0].CodEstablecimiento;
-                        pacienteAnses['nombreEstablecimiento'] = vacunas[0].NombreEstablecimiento;
-                        pacienteAnses['fechaAplicacion'] = vacunas[0].FechaAplicacion;
+                        // pacienteAnses['codigoEstablecimiento'] = (vacunas) ? vacunas[0].CodEstablecimiento : '';
+                        // pacienteAnses['nombreEstablecimiento'] = (vacunas) ? vacunas[0].NombreEstablecimiento : '';
+                        // pacienteAnses['fechaAplicacion'] = (vacunas) ? vacunas[0].FechaAplicacion : '';
                         pacienteAnses['dependencia'] = '        ';
 
                         let pacienteSumar: any = await getDatosSumar(pacientesCuil[i].documento, pool);
@@ -323,7 +425,8 @@ async function exportarPacientesAnses() {
                             pacienteAnses['sumar'] = 'NO';
                             x++;
                         }
-
+console.log("Paciente Anses: ", pacienteAnses)
+console.log("Numero: ", x)
                         listaPacienteAnses.push(pacienteAnses);
                     } else {
 
@@ -352,12 +455,12 @@ async function procesarDatosAnses(data) {
         let discapacitado = x.discapacitado;
         let fechaControl = moment(x.fechaControl).format("YYYYMMDD");
         let esquema = x.esquema;
-        let codigoEstablecimiento = x.codigoEstablecimiento.substring(0, 9);
-        let nombreEstablecimiento = (x.nombreEstablecimiento.length <= 35) ? x.nombreEstablecimiento + ' '.repeat(35 - x.nombreEstablecimiento.length) : x.nombreEstablecimiento.substring(0, 35);
-        let fechaAplicacion = moment(x.fechaAplicacion).format("YYYYMMDD");
+        // let codigoEstablecimiento = x.codigoEstablecimiento.substring(0, 9);
+        // let nombreEstablecimiento = (x.nombreEstablecimiento.length <= 35) ? x.nombreEstablecimiento + ' '.repeat(35 - x.nombreEstablecimiento.length) : x.nombreEstablecimiento.substring(0, 35);
+        // let fechaAplicacion = moment(x.fechaAplicacion).format("YYYYMMDD");
         let dependencia = x.dependencia;
 
-        writer.write(cuil + sumar + sisa + cuie + establecimiento + discapacitado + fechaControl + esquema + codigoEstablecimiento + nombreEstablecimiento + fechaAplicacion + dependencia);
+        writer.write(cuil + sumar + sisa + cuie + establecimiento + discapacitado + fechaControl + esquema +  dependencia);
         writer.write('\n');
     });
 }
