@@ -84,9 +84,8 @@ function inicio() {
             }]
 
             inquirer.prompt(opcion).then(answers => {
-                console.log("Respuesta", answers)
                 let mpi;
-                if (answers.pacienteMpi === 1) {
+                if (answers.pacienteMPI === 1) {
                     mpi = true;
                 } else {
                     mpi = false;
@@ -122,9 +121,6 @@ function inicio() {
                         }
                     })
             });
-
-
-
         } else if (answers.cuilificar === 'exportar') {
             exportPacientes();
         } else if (answers.cuilificar === 'exportar_anses') {
@@ -322,7 +318,7 @@ function exportPacientes() {
                 if (longDocumento > 8) {
                     doc = doc.substring(0, 8);
                 }
-                
+
                 writer.write('29' + doc + nombreCompleto + sexo + fechaNac + '                                                                                                    ');
                 writer.write('\n');
             });
