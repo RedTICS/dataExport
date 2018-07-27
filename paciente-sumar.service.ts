@@ -34,7 +34,7 @@ export async function exportarPacientesAnses() {
         console.log("Exportando a ANSES...")
         let cursor = dbMongo.collection(coleccion).aggregate([
             {
-                $match: { cuil: { $ne: '', $exists: true } }
+                $match: { cuil: { $ne: '', $exists: true }, fechaNacimiento: { $gte: '20000718' } }
             },
             { $project: { cuil: 1, documento: 1, fechaNacimiento: 1, nombreCompleto: 1 } },
             {
@@ -62,39 +62,42 @@ export async function exportarPacientesAnses() {
             console.log("Cant Pacientes: ", pacientesCuil.length)
 
             for (let z = 0; z < pacientesCuil.length; z++) {
+                // for (let z = 0; z < 1500; z++) {
 
                 let fechaNac = (pacientesCuil[z].fechaNacimiento) ? pacientesCuil[z].fechaNacimiento : '';
 
                 let edad = await getEdadPaciente(fechaNac);
                 listaDni.push(pacientesCuil[z].documento);
-                
-                if (edad <= 18) {
-                    menores++;
 
-                    let prestaciones: any = await getNomivacExcel(pacientesCuil[z], pool);
-                    prestaciones = prestaciones.recordset;
+                // if (edad <= 18) {
+                menores++;
+                console.log("Menores: ", menores);
+                let prestaciones: any = await getNomivacExcel(pacientesCuil[z], pool);
+                prestaciones = prestaciones.recordset;
 
-                    if (prestaciones.length > 0) {
-                        let pacienteAnses: any = {};
+                if (prestaciones.length > 0) {
+                    let pacienteAnses: any = {};
 
-                        pacienteAnses['cuil'] = pacientesCuil[z].cuil;
-                        pacienteAnses['documento'] = pacientesCuil[z].documento;
-                        pacienteAnses['cuie'] = prestaciones[0].Cuie;
-                        pacienteAnses['establecimiento'] = prestaciones[0].Efector;
-                        pacienteAnses['fechaControl'] = prestaciones[0].Fecha;
-                        pacienteAnses['discapacitado'] = '  ';
-                        pacienteAnses['esquema'] = 'EN';
-                        pacienteAnses['codigoEstablecimiento'] = (prestaciones[0].CodigoEstablecimiento) ? prestaciones[0].CodigoEstablecimiento : ''; //(vacunas) ? vacunas[0].CodEstablecimiento : '';
-                        pacienteAnses['Establecimiento'] = (prestaciones[0].Establecimiento) ? prestaciones[0].Establecimiento : ' ';// (vacunas) ? vacunas[0].NombreEstablecimiento : '';
-                        pacienteAnses['fechaAplicacion'] = (prestaciones[0].fechaAplicacion) ? prestaciones[0].fechaAplicacion : '';//(vacunas) ? vacunas[0].FechaAplicacion : '';
-                        pacienteAnses['dependencia'] = '        ';
-                        pacienteAnses['sumar'] = prestaciones[0].sumar;
-                        
-                        listaPacienteAnses.push(pacienteAnses);                        
-                    }
+                    pacienteAnses['cuil'] = pacientesCuil[z].cuil;
+                    pacienteAnses['documento'] = pacientesCuil[z].documento;
+                    pacienteAnses['cuie'] = prestaciones[0].Cuie;
+                    pacienteAnses['establecimiento'] = prestaciones[0].Efector;
+                    pacienteAnses['fechaControl'] = prestaciones[0].Fecha;
+                    pacienteAnses['discapacitado'] = 'NO';
+                    pacienteAnses['esquema'] = 'EN';
+                    pacienteAnses['codigoEstablecimiento'] = (prestaciones[0].CodigoEstablecimiento) ? prestaciones[0].CodigoEstablecimiento : ''; //(vacunas) ? vacunas[0].CodEstablecimiento : '';
+                    pacienteAnses['Establecimiento'] = (prestaciones[0].Establecimiento) ? prestaciones[0].Establecimiento : 'sin datos';// (vacunas) ? vacunas[0].NombreEstablecimiento : '';
+                    pacienteAnses['fechaAplicacion'] = (prestaciones[0].fechaAplicacion) ? prestaciones[0].fechaAplicacion : '';//(vacunas) ? vacunas[0].FechaAplicacion : '';
+                    pacienteAnses['dependencia'] = '';
+                    pacienteAnses['sumar'] = prestaciones[0].sumar;
+
+                    listaPacienteAnses.push(pacienteAnses);
                 } else {
-                    mayores++;
+                    console.log("El DNI: ", pacientesCuil[z].documento);
                 }
+                // } else {
+                //     mayores++;
+                // }
             }
         });
 
@@ -109,24 +112,24 @@ export async function exportarPacientesAnses() {
 
 async function procesarDatosAnses(data) {
     let writer = fs.createWriteStream('pacientes_anses.txt', {
-        flags: 'a' // 'a' means appending (old data will be preserved)
+        flags: 'a' // 'a' means appending (old data will be preserved)        
     });
 
     data.forEach(x => {
-        let cuil = x.cuil;
-        let documento = x.documento;
-        let sumar = x.sumar;
-        let sisa = ' '.repeat(15);
-        let cuie = x.cuie + ' '.repeat(9 - x.cuie.length);
-        let establecimiento = (x.establecimiento.length <= 35) ? x.establecimiento + ' '.repeat(35 - x.establecimiento.length) : x.establecimiento.substring(0, 35);
-        let discapacitado = x.discapacitado;
-        let fechaControl = moment(x.fechaControl).format("YYYYMMDD");
-        let esquema = x.esquema;
-        let codigoEstablecimiento = (x.codigoEstablecimiento) ? x.codigoEstablecimiento.substring(0, 9) : '';
-        let nombreEstablecimiento = (x.Establecimiento.length <= 35) ? x.Establecimiento + ' '.repeat(35 - x.Establecimiento.length) : x.Establecimiento.substring(0, 35);
-        let fechaAplicacion = (x.fechaAplicacion) ? moment(x.fechaAplicacion).format("YYYYMMDD") : '';
-        let dependencia = x.dependencia;
-        let relleno = ' '.repeat(156);
+        let cuil = x.cuil; // 11
+        // let documento = x.documento;
+        let sumar = x.sumar; // 2
+        let sisa = '0'.repeat(15); // 15
+        let cuie = x.cuie + ' '.repeat(9 - x.cuie.length); // 9
+        let establecimiento = (x.establecimiento.length <= 35) ? x.establecimiento + ' '.repeat(35 - x.establecimiento.length) : x.establecimiento.substring(0, 35); // 35
+        let discapacitado = x.discapacitado; // 2
+        let fechaControl = moment(x.fechaControl).format("YYYYMMDD"); // 8
+        let esquema = x.esquema; // 2
+        let codigoEstablecimiento = (x.codigoEstablecimiento) ? x.codigoEstablecimiento.substring(0, 9) : '000000000'; // 9
+        let nombreEstablecimiento = (x.Establecimiento.length <= 35) ? x.Establecimiento + ' '.repeat(35 - x.Establecimiento.length) : x.Establecimiento.substring(0, 35); // 35        
+        let fechaAplicacion = (x.fechaAplicacion) ? moment(x.fechaAplicacion).format("YYYYMMDD") : '00000000'; // 8
+        let dependencia = (x.dependencia) ? x.dependencia : '00000000'; // 8
+        let relleno = ' '.repeat(155); // 144 - 300
 
         writer.write(cuil + sumar + sisa + cuie + establecimiento + discapacitado + fechaControl + esquema + codigoEstablecimiento + nombreEstablecimiento + fechaAplicacion + dependencia + relleno);
         writer.write('\n');

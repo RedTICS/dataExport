@@ -292,7 +292,7 @@ function exportPacientes() {
         dbMongo.collection(coleccion).find({}).toArray(function (err, docs) {
             console.log("Found the following records: ", docs.length);
             let writer = fs.createWriteStream('exportPatient.txt', {
-                flags: 'a' // 'a' means appending (old data will be preserved)
+                flags: 'a' // 'a' means appending (old data will be preserved)                
             })
             docs.forEach(element => {
                 let sexo = (element.sexo == 'femenino') ? 'F' : 'M';
